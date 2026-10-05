@@ -1,6 +1,6 @@
 from django.db import models
 import uuid
-from config import settings
+from django.conf import settings
 
 
 class Game(models.Model):
@@ -21,6 +21,9 @@ class Game(models.Model):
 
     id = models.UUIDField(
         primary_key=True, unique=True, editable=False, default=uuid.uuid4
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="created_games"
     )
 
     scenario = models.TextField()
@@ -58,7 +61,7 @@ class Player(models.Model):
     role = models.CharField(max_length=20, choices=Role.choices, null=True, blank=True)
     personality = models.CharField(max_length=400, blank=True, default="")
     private_information = models.TextField(blank=True, default="")
-    is_alive = models.BooleanField(default=False)
+    is_alive = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.name}"
