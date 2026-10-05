@@ -1,3 +1,8 @@
-from django.shortcuts import render
+from rest_framework.views import APIView
+from rest_framework import generics
+from rest_framework.response import responses
+from rest_framework.permissions import IsAuthenticated
 
-# Create your views here.
+
+class GameView(generics.ListCreateAPIView):
+    ...
