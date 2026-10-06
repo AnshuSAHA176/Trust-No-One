@@ -26,7 +26,8 @@ class Game(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="created_games"
     )
 
-    scenario = models.TextField()
+    scenario = models.TextField( blank=True,
+        default="")
 
     phase = models.CharField(choices=Phase.choices, default=Phase.SETUP)
 

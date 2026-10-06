@@ -1,9 +1,10 @@
 from django.db import models
 from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.models import PermissionsMixin
 import uuid
 from .custom_user_manager import CustomUserManager
 
-class User(AbstractBaseUser):
+class User(AbstractBaseUser,PermissionsMixin):
 
     objects = CustomUserManager()
 
