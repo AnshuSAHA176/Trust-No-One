@@ -60,10 +60,8 @@ class GameView(generics.ListCreateAPIView):
 
         scenario = generate_scenario(scenario_players)
 
-# Save human's private information
-        human_player.private_information = scenario["players"][0][
-            "private_information"
-        ]
+        # Save human's private information
+        human_player.private_information = scenario["players"][0]["private_information"]
         human_player.alibi = scenario["players"][0]["alibi"]
 
         human_player.save(
@@ -110,6 +108,5 @@ class GameView(generics.ListCreateAPIView):
                     "role": human_player.role,
                 },
                 "players": serializer.data,
-            
             }
         )
