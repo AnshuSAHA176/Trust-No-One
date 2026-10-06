@@ -7,6 +7,7 @@ from .serializer import PlayerSerializer
 import random
 from django.db import transaction
 from rest_framework import status
+from .senario import generate_scenario
 
 
 class GameView(generics.ListCreateAPIView):
@@ -33,9 +34,7 @@ class GameView(generics.ListCreateAPIView):
 
         players = []
 
-        serializer = PlayerSerializer(human_player)
-
-        players.append(serializer.data)
+        players.append(human_player)
 
         for i, name in enumerate(random.sample(["A", "B", "C"], k=3)):
             if i == 1:
@@ -47,8 +46,58 @@ class GameView(generics.ListCreateAPIView):
                 bots = Player.objects.create(
                     name=name, game=game, role=Player.Role.SAATHI
                 )
-            serializer = PlayerSerializer(bots)
-            players.append(serializer.data)
+
+            players.append(bots)
+
+        serializer = PlayerSerializer(players, many=True)
+        scenario_players = [
+            {
+                "player_name": player.name,
+                "role": player.role,
+            }
+            for player in players
+        ]
+
+        scenario = generate_scenario(scenario_players)
+
+# Save human's private information
+        human_player.private_information = scenario["players"][0][
+            "private_information"
+        ]
+        human_player.alibi = scenario["players"][0]["alibi"]
+
+        human_player.save(
+            update_fields=[
+                "private_information",
+                "alibi",
+            ]
+        )
+
+        # Save public scenario only
+        game.scenario = {
+            "title": scenario["title"],
+            "description": scenario["description"],
+            "location": scenario["location"],
+            "incident": scenario["incident"],
+            "timeline": scenario["timeline"],
+            "evidence": scenario["evidence"],
+        }
+
+        game.save(update_fields=["scenario"])
+
+        # Save bot private information
+        for i in range(1, len(players)):
+            players[i].private_information = scenario["players"][i][
+                "private_information"
+            ]
+            players[i].alibi = scenario["players"][i]["alibi"]
+
+            players[i].save(
+                update_fields=[
+                    "private_information",
+                    "alibi",
+                ]
+            )
 
         return Response(
             {
@@ -60,6 +109,7 @@ class GameView(generics.ListCreateAPIView):
                     "name": human_player.name,
                     "role": human_player.role,
                 },
-                "players": players,
+                "players": serializer.data,
+            
             }
         )

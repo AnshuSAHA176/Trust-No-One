@@ -26,8 +26,10 @@ class Game(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="created_games"
     )
 
-    scenario = models.TextField( blank=True,
-        default="")
+    scenario = models.JSONField(
+    blank=True,
+    default=dict
+)
 
     phase = models.CharField(choices=Phase.choices, default=Phase.SETUP)
 
@@ -62,6 +64,10 @@ class Player(models.Model):
     role = models.CharField(max_length=20, choices=Role.choices, null=True, blank=True)
     personality = models.CharField(max_length=400, blank=True, default="")
     private_information = models.TextField(blank=True, default="")
+    alibi = models.TextField(
+    blank=True,
+    default=""
+)
     is_alive = models.BooleanField(default=True)
 
     def __str__(self):
