@@ -14,7 +14,7 @@ class Conversation(models.Model):
     )
     question = models.TextField()
 
-    answer = models.TextField()
+    answer = models.TextField(blank=True, default="")
 
     created_at = models.DateTimeField(auto_now_add=True)
 
