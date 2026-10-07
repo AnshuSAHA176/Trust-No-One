@@ -23,7 +23,7 @@ class ConversationSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         game_id = attrs.get("game")
-        game = Game.objects.filter(id=game_id, status=Game.Status.RUNNING)
+        game = Game.objects.filter(id=game_id, status=Game.Status.RUNNING,phase = Game.Phase.INVESTIGATION)
         if not attrs.get("question"):
             raise serializers.ValidationError("You must ask any question")
 
@@ -49,7 +49,7 @@ class ConversationSerializer(serializers.ModelSerializer):
             sender = validated_data.get('sender'),
 
             receiver = validated_data.get('receiver'),    
-            question = validated_data.get('question')
-            answer = ''
+            question = validated_data.get('question'),
+        
             
         )
