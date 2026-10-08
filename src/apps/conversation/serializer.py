@@ -43,7 +43,7 @@ class ConversationSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data): 
-        Conversation.objects.create(
+        return Conversation.objects.create(
            
 
             game = validated_data.get('game'),
@@ -54,3 +54,14 @@ class ConversationSerializer(serializers.ModelSerializer):
         
             
         )
+
+
+class AnswersQuestionView(serializers.ModelSerializer):
+    class Meta:
+        model = Conversation
+        fields =['answer']
+
+    def validate(self, attrs):
+        if not attrs['answer']:
+            raise serializers.ValidationError('Please provide the answer')
+        return attrs

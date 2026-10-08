@@ -1,7 +1,8 @@
 from django.urls import path
-from .views import AskQuestionView
+from .views import AskQuestionView,AnswersQuestionView
 
 
 urlpatterns=[
-    path('ask/',AskQuestionView.as_view(),name='ask question')
+    path('<str:conversation_id>/answer/',AnswersQuestionView.as_view(),name='ask question'),
+    path('ask/',AskQuestionView.as_view(),name='ask question'),
 ]
