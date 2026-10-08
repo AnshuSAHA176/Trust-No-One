@@ -1,23 +1,22 @@
 from rest_framework import serializers
-from .models import Conversation
+from .models import Message
 from apps.game.models import Game
 
 
 class ConversationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Conversation
+        model = Message
         fields = [
             "id",
             "game",
             "sender",
             "receiver",
-            "question",
-            "answer",
+            "content",
             "created_at",
         ]
         read_only_fields = [
             "id",
-            "answer",
+            
             "created_at",
         ]
 
@@ -43,14 +42,14 @@ class ConversationSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data): 
-        return Conversation.objects.create(
+        return Message.objects.create(
            
 
             game = validated_data.get('game'),
             sender = validated_data.get('sender'),
 
             receiver = validated_data.get('receiver'),    
-            question = validated_data.get('question'),
+            content = validated_data.get('content'),
         
             
         )
@@ -58,10 +57,11 @@ class ConversationSerializer(serializers.ModelSerializer):
 
 class AnswersQuestionView(serializers.ModelSerializer):
     class Meta:
-        model = Conversation
+        model = Message
         fields =['answer']
 
     def validate(self, attrs):
         if not attrs['answer']:
             raise serializers.ValidationError('Please provide the answer')
         return attrs
+
