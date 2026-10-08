@@ -22,23 +22,24 @@ class ConversationSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        game_id = attrs.get("game")
-        game = Game.objects.filter(id=game_id, status=Game.Status.RUNNING,phase = Game.Phase.INVESTIGATION)
-        if not attrs.get("question"):
-            raise serializers.ValidationError("You must ask any question")
+        game = attrs.get("game")
 
         if not game:
             raise serializers.ValidationError("Please provide the game")
 
-        if not game.exists():
-            raise serializers.ValidationError("Please provide a valid game")
+        if game.status != Game.Status.RUNNING:
+            raise serializers.ValidationError("Game is not running")
 
-        if not game.filter(players=attrs.get("sender")):
+        if game.phase != Game.Phase.INVESTIGATION:
+            raise serializers.ValidationError("Investigation is not active")
+
+        if not game.players.filter(id=attrs.get("sender").id).exists():
             raise serializers.ValidationError("incorrect sender")
 
-        if not game.filter(players=attrs.get("receiver")):
+        if not game.players.filter(id=attrs.get("receiver").id).exists():
             raise serializers.ValidationError("incorrect reciver")
 
+        
         return attrs
 
     def create(self, validated_data): 

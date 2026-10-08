@@ -3,7 +3,7 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Game, Player
-from .serializer import PlayerSerializer
+from .serializer import PlayerSerializer,GameListSerializer
 import random
 from django.db import transaction
 from rest_framework import status
@@ -12,7 +12,11 @@ from .senario import generate_scenario
 
 class GameView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
-
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return GameListSerializer
+    def get_queryset(self):
+        return Game.objects.filter(created_by=self.request.user)
     @transaction.atomic()
     def post(self, request, *args, **kwargs):
 
