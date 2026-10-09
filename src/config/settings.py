@@ -31,6 +31,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -70,7 +71,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
+# WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
 
 
 # Database
@@ -83,7 +85,7 @@ DATABASES = {
         "USER": "trust_no_one",
         "PASSWORD": "trust_no_one_password",
         "HOST": "127.0.0.1",
-        "PORT": "5433",
+        "PORT": "5432",
     }
 }
 
@@ -139,3 +141,16 @@ REST_FRAMEWORK = {
     )
 
 }
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6378)],
+        },
+    },
+}
+
+
+CELERY_BROKER_URL = "redis://127.0.0.1:6378/1"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6378/1"
