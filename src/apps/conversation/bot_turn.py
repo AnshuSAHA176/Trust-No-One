@@ -6,7 +6,7 @@ from asgiref.sync import async_to_sync
 from .bot_graph import question_graph
 from apps.game.models import Game
 from apps.conversation.models import Message
-
+import json
 
 @shared_task(bind=True, ignore_result=True)
 def run_bot_turn(self, game_id, bot_id):
@@ -46,7 +46,7 @@ def run_bot_turn(self, game_id, bot_id):
                 "alibi": bot.alibi,
             },
             "game_id": str(game.id),
-            "game_senario": game.scenario,
+            "game_senario": json.dumps(game.scenario),
             "players_info": [
                 {
                     "id": str(player.id),
@@ -57,6 +57,7 @@ def run_bot_turn(self, game_id, bot_id):
             "previous_messages": conversation_history,
             "max_retry": 0,
         })
+        
 
         receiver = game.players.get(
             id=result["receiver_id"],

@@ -40,39 +40,39 @@ def previous_messages(state: State):
     return {"previous_messages": history}
 
 
+
 def generate_response(state: State):
-    model = get_model()
+    model = get_model("openai/gpt-oss-20b")
 
     prompt = f"""
-You are a character in the social deduction game Trust No One.
+You are playing Trust No One.
 
-GAME SCENARIO:
-{state.game_scenario}
+Scenario: {state.game_scenario}
+Your role: {state.role}
+Your personality: {state.personality}
+Your private information: {state.private_information}
+Your alibi: {state.alibi}
 
-YOUR ROLE: {state.role}
-YOUR PERSONALITY: {state.personality}
-YOUR PRIVATE INFORMATION: {state.private_information}
-YOUR ALIBI: {state.alibi}
+Recent conversation:
+{json.dumps(state.previous_messages[-10:], ensure_ascii=False)}
 
-CONVERSATION HISTORY:
-{json.dumps(state.previous_messages, ensure_ascii=False)}
-
-RULES:
-1. Reply naturally, in character, in 1-4 sentences.
-2. Use your alibi, private information and conversation history.
-3. A PARTNER should investigate and help uncover the truth.
-4. A GADDAR may deceive strategically to protect their identity.
-5. Never change your assigned role or invent new evidence.
-6. Do not reveal private information unless your character chooses to.
-7. Respond to the latest message directed at you.
-8. Keep the conversation suspenseful and engaging.
-
-Generate only your character's reply.
+Rules:
+- Reply directly to the latest message addressed to you.
+- Use 1-3 short sentences, maximum 40 words.
+- Partners investigate; Gaddar protects their identity.
+- Never invent evidence or change your assigned role.
+- Output only your spoken reply.
 """
 
     result = model.invoke(prompt)
+    reply = result.content.strip()
 
-    return {"response": result.content}
+    if not reply:
+        raise ValueError("LLM returned an empty response")
+
+    return {"response": reply}
+
+
 
 
 builder = StateGraph(State)
