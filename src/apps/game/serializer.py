@@ -51,5 +51,15 @@ class VoteSerializer(serializers.ModelSerializer):
             voter=validated_data["game"].players.get(
                 user=self.context.get("request").user, is_human=True
             ),
-            **validated_data
+            **validated_data,
         )
+
+
+class VoteCountSerializer(serializers.ModelSerializer):
+    votes_received = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Player
+        fields = ["id", "name", "votes_received"]
+    def get_votes_received(self, obj):
+        return Voting.objects.filter(target=obj).count()

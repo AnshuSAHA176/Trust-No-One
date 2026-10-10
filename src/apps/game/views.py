@@ -3,7 +3,7 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Game, Player
-from .serializer import PlayerSerializer,GameListSerializer,VoteSerializer
+from .serializer import PlayerSerializer,GameListSerializer,VoteSerializer,VoteCountSerializer
 import random
 from django.db import transaction
 from rest_framework import status
@@ -146,4 +146,23 @@ class VoteView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+    def get(self,request,game_id):
+
+        try:
+            game = Game.objects.get(id=game_id)
+        except Game.DoesNotExist:
+            return Response({
+                "error":"Please provide valid game id"
+            },status=status.HTTP_400_BAD_REQUEST)
+
+        data = {
+          "game_id": str(game.id),
+          "status": str(game.status),
+          "total_votes": game.votings.count(),
+          "results": VoteCountSerializer(game.players,many=True).data
+            
+        }
+        return Response(data)
+
+
         
