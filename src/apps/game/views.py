@@ -3,12 +3,12 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Game, Player
-from .serializer import PlayerSerializer,GameListSerializer
+from .serializer import PlayerSerializer,GameListSerializer,VoteSerializer
 import random
 from django.db import transaction
 from rest_framework import status
 from .senario import generate_scenario
-
+from django.db import IntegrityError,transaction
 
 class GameView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -114,3 +114,36 @@ class GameView(generics.ListCreateAPIView):
                 "players": serializer.data,
             }
         )
+
+
+
+
+class VoteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, game_id):
+        try:
+            with transaction.atomic():
+                serializer = VoteSerializer(
+                    data={**request.data, "game": game_id},
+                    context={"request": request},
+                )
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+
+            return Response(
+                {
+                    "message": "Your vote has been submitted successfully.",
+                    "vote": serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        except IntegrityError:
+            return Response(
+                {
+                    "error": "You have already voted in this game. Each player can vote only once."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        

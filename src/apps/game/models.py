@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import F, Q
 import uuid
 from django.conf import settings
 
@@ -26,10 +27,7 @@ class Game(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="created_games"
     )
 
-    scenario = models.JSONField(
-    blank=True,
-    default=dict
-)
+    scenario = models.JSONField(blank=True, default=dict)
 
     phase = models.CharField(choices=Phase.choices, default=Phase.SETUP)
 
@@ -64,11 +62,34 @@ class Player(models.Model):
     role = models.CharField(max_length=20, choices=Role.choices, null=True, blank=True)
     personality = models.CharField(max_length=400, blank=True, default="")
     private_information = models.TextField(blank=True, default="")
-    alibi = models.TextField(
-    blank=True,
-    default=""
-)
+    alibi = models.TextField(blank=True, default="")
     is_alive = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.name}"
+
+
+class Voting(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="votings")
+    voter = models.OneToOneField(Player, on_delete=models.CASCADE, related_name="voter")
+    target = models.OneToOneField(
+        Player, on_delete=models.CASCADE, related_name="target"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+
+        indexes = [
+            models.Index(fields=["voter", "target"]),
+            models.Index(fields=["voter"]),
+            models.Index(fields=["target"]),
+        ]
+        constraints = [
+            
+            models.UniqueConstraint(
+                fields=["voter", "game"], name="one vote per game"
+            ),
+            models.CheckConstraint(
+                check=~Q(voter=F("target")), name="voter_cannot_vote_themselves"
+            ),
+        ]
