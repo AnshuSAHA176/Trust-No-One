@@ -70,26 +70,39 @@ class Player(models.Model):
 
 
 class Voting(models.Model):
-    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="votings")
-    voter = models.OneToOneField(Player, on_delete=models.CASCADE, related_name="voter")
-    target = models.OneToOneField(
-        Player, on_delete=models.CASCADE, related_name="target"
+    game = models.ForeignKey(
+        Game,
+        on_delete=models.CASCADE,
+        related_name="votings",
     )
+
+    voter = models.ForeignKey(
+        Player,
+        on_delete=models.CASCADE,
+        related_name="votes",
+    )
+
+    target = models.ForeignKey(
+        Player,
+        on_delete=models.CASCADE,
+        related_name="target",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-
         indexes = [
-            models.Index(fields=["voter", "target"]),
+            models.Index(fields=["game", "target"]),
             models.Index(fields=["voter"]),
-            models.Index(fields=["target"]),
         ]
+
         constraints = [
-            
             models.UniqueConstraint(
-                fields=["voter", "game"], name="one vote per game"
+                fields=["game", "voter"],
+                name="one_vote_per_player_per_game",
             ),
             models.CheckConstraint(
-                check=~Q(voter=F("target")), name="voter_cannot_vote_themselves"
+                condition=~Q(voter=F("target")),
+                name="voter_cannot_vote_themselves",
             ),
         ]

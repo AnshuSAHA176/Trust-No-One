@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Game, Player, Voting
 from django.db import transaction
 import random
-
+from .dicpatch_vote_task import agent_vote
 
 class PlayerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -47,12 +47,35 @@ class VoteSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        return Voting.objects.create(
-            voter=validated_data["game"].players.get(
-                user=self.context.get("request").user, is_human=True
-            ),
+        game = validated_data["game"]
+        request = self.context["request"]
+
+        voter = game.players.get(
+            user=request.user,
+            is_human=True,
+            is_alive=True,
+        )
+
+        vote = Voting.objects.create(
+            voter=voter,
             **validated_data,
         )
+
+        bot_ids = list(
+            game.players.filter(
+                is_human=False,
+                is_alive=True,
+            ).values_list("id", flat=True)
+        )
+
+        transaction.on_commit(
+            lambda: [
+                agent_vote.delay(str(game.id), str(bot_id))
+                for bot_id in bot_ids
+            ]
+        )
+
+        return vote
 
 
 class VoteCountSerializer(serializers.ModelSerializer):

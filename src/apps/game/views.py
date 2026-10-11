@@ -237,17 +237,26 @@ class GameFinnishedView(APIView):
             if game.status not in [Game.Status.RUNNING]:
                 return Response(
                     {
-                        "error":"Game has been pending or finish"
+                        "error":f"Game has been {game.status}"
                     },status=status.HTTP_400_BAD_REQUEST
                 )
 
             max_vote_reciver = (
-                game.players.values("id", "target", "name", "role")
+                game.players
                 .annotate(max_player=Count("target"))
-                .order_by("-max_player")[:2]
+                .order_by("-max_player")
+                .values("id", "name", "role", "max_player")[:2]
             )
-            if max_vote_reciver[0]["target"] == max_vote_reciver[1]["target"]:
+            if not max_vote_reciver or max_vote_reciver[0]["max_player"] == 0:
                 winner = "Draw"
+
+            elif (
+                len(max_vote_reciver) > 1
+                and max_vote_reciver[0]["max_player"]
+                == max_vote_reciver[1]["max_player"]
+            ):
+                winner = "Draw"
+
 
             print(max_vote_reciver)
             if max_vote_reciver[0]["role"] == "patner":
