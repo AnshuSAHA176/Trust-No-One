@@ -15,14 +15,11 @@ from django.db import transaction
 from rest_framework import status
 from .senario import generate_scenario
 from django.db import IntegrityError, transaction
-
-
-
-
-
+from django.db.models import Count
 
 
 from apps.conversation.select_player import get_next_player
+
 
 class GameView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -187,10 +184,6 @@ class PhaseEditView(generics.UpdateAPIView):
     serializer_class = PhaseEditSerializer
 
 
-
-
-
-
 class StartGameView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -223,6 +216,65 @@ class StartGameView(APIView):
                 "game_id": str(game.id),
                 "status": game.status,
                 "first_turn": first_turn,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class GameFinnishedView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, game_id):
+        with transaction.atomic():
+            try:
+                game = Game.objects.select_for_update().get(id=game_id)
+
+            except Game.DoesNotExist:
+                return Response(
+                    {"error": "Please enter a valid game id"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if game.status not in [Game.Status.RUNNING]:
+                return Response(
+                    {
+                        "error":"Game has been pending or finish"
+                    },status=status.HTTP_400_BAD_REQUEST
+                )
+
+            max_vote_reciver = (
+                game.players.values("id", "target", "name", "role")
+                .annotate(max_player=Count("target"))
+                .order_by("-max_player")[:2]
+            )
+            if max_vote_reciver[0]["target"] == max_vote_reciver[1]["target"]:
+                winner = "Draw"
+
+            print(max_vote_reciver)
+            if max_vote_reciver[0]["role"] == "patner":
+                winner = "gaddar"
+            else:
+                winner = "partner"
+
+            game.status = Game.Status.FINISHED
+            
+            game.save(update_fields=["status"])
+            if winner == 'Draw':
+                return Response(
+                    {
+                        "game_id": str(game.id),
+                        "status": game.status,
+                        "message": "Its a Draw",
+                    },
+                    status=status.HTTP_200_OK,
+                )
+        game.players.filter(id=max_vote_reciver[0]["id"]).update(is_alive=False)
+        return Response(
+            {
+                "game_id": str(game.id),
+                "status": game.status,
+                "winner": winner,
+                "loser": "gaddar" if winner == "partner" else "partner",
+                "message": "Partners win!" if winner == "partner" else "Gaddar wins!",
             },
             status=status.HTTP_200_OK,
         )

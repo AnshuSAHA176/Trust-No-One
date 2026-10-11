@@ -46,3 +46,5 @@ class ConversationHistoryView(generics.ListAPIView):
         return Message.objects.filter(
             game=self.request.query_params.get('game')
         )
+
+
