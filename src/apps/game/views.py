@@ -3,20 +3,37 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Game, Player
-from .serializer import PlayerSerializer,GameListSerializer,VoteSerializer,VoteCountSerializer
+from .serializer import (
+    PlayerSerializer,
+    GameListSerializer,
+    VoteSerializer,
+    VoteCountSerializer,
+    PhaseEditSerializer,
+)
 import random
 from django.db import transaction
 from rest_framework import status
 from .senario import generate_scenario
-from django.db import IntegrityError,transaction
+from django.db import IntegrityError, transaction
+
+
+
+
+
+
+
+from apps.conversation.select_player import get_next_player
 
 class GameView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
+
     def get_serializer_class(self):
-        if self.request.method == 'GET':
+        if self.request.method == "GET":
             return GameListSerializer
+
     def get_queryset(self):
         return Game.objects.filter(created_by=self.request.user)
+
     @transaction.atomic()
     def post(self, request, *args, **kwargs):
 
@@ -116,8 +133,6 @@ class GameView(generics.ListCreateAPIView):
         )
 
 
-
-
 class VoteView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -146,23 +161,68 @@ class VoteView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-    def get(self,request,game_id):
+
+    def get(self, request, game_id):
 
         try:
             game = Game.objects.get(id=game_id)
         except Game.DoesNotExist:
-            return Response({
-                "error":"Please provide valid game id"
-            },status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Please provide valid game id"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         data = {
-          "game_id": str(game.id),
-          "status": str(game.status),
-          "total_votes": game.votings.count(),
-          "results": VoteCountSerializer(game.players,many=True).data
-            
+            "game_id": str(game.id),
+            "status": str(game.status),
+            "total_votes": game.votings.count(),
+            "results": VoteCountSerializer(game.players, many=True).data,
         }
         return Response(data)
 
 
-        
+class PhaseEditView(generics.UpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Game.objects.all()
+    serializer_class = PhaseEditSerializer
+
+
+
+
+
+
+class StartGameView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, game_id):
+        with transaction.atomic():
+            game = Game.objects.select_for_update().get(id=game_id)
+
+            if game.status != Game.Status.PENDING:
+                return Response(
+                    {"error": "Game has already started or finished."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            players = game.players.filter(is_alive=True)
+
+            if players.count() != 4:
+                return Response(
+                    {"error": "The game requires exactly 4 living players."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            game.status = Game.Status.RUNNING
+            game.save(update_fields=["status"])
+
+        first_turn = get_next_player(game_id=str(game.id))
+
+        return Response(
+            {
+                "message": "Game started successfully.",
+                "game_id": str(game.id),
+                "status": game.status,
+                "first_turn": first_turn,
+            },
+            status=status.HTTP_200_OK,
+        )

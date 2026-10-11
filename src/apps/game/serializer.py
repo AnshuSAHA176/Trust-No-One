@@ -63,3 +63,23 @@ class VoteCountSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "votes_received"]
     def get_votes_received(self, obj):
         return Voting.objects.filter(target=obj).count()
+
+
+class PhaseEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Game
+        fields=["phase"]
+
+    def validate_phase(self,value):
+        game = self.instance
+
+        allow_phase={
+        "INVESTIGATION": ["VOTING"],
+        "VOTING": ["ELIMINATION"],
+        "ELIMINATION": ["INVESTIGATION", "RESULT"],
+        }
+
+        if value not in allow_phase.get(game.phase,[]):
+            raise serializers.ValidationError ("This phase transition is not allowed.")
+
+        return value
